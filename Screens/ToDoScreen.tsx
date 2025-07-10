@@ -1,17 +1,21 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-    FlatList,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 const Icon = require('react-native-vector-icons/Ionicons').default;
 
 export default function ToDoScreen() {
   const [item, setItem] = useState('');
   const [list, setList] = useState<string[]>([]);
+
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   const handleAdd = () => {
     if (item.trim() !== '') {
@@ -26,8 +30,23 @@ export default function ToDoScreen() {
     setList(updatedList);
   };
 
+  // Fetch user data from Reqres
+  useEffect(() => {
+    fetch('https://reqres.in/api/users/2')
+      .then((res) => res.json())
+      .then((data) => {
+        setUser(data.data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error('Error fetching user:', error);
+        setLoading(false);
+      });
+  }, []);
+
   return (
     <View style={styles.container}>
+      {/* To-Do Input */}
       <View style={styles.inputRow}>
         <TextInput
           placeholder="Enter item"
@@ -40,6 +59,7 @@ export default function ToDoScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* To-Do List */}
       <FlatList
         data={list}
         keyExtractor={(_, index) => index.toString()}
@@ -53,6 +73,20 @@ export default function ToDoScreen() {
         )}
         style={{ marginTop: 20 }}
       />
+
+      {/* API Response */}
+      <Text style={styles.sectionTitle}>API User Info</Text>
+
+      {loading ? (
+        <ActivityIndicator size="large" color="#0000ff" />
+      ) : user ? (
+        <View style={styles.apiBox}>
+          <Text>User ID: {user.id}</Text>
+          <Text>Email: {user.email}</Text>
+        </View>
+      ) : (
+        <Text>Failed to load user.</Text>
+      )}
     </View>
   );
 }
@@ -86,5 +120,16 @@ const styles = StyleSheet.create({
   todoText: {
     fontSize: 16,
     flex: 1,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 30,
+    marginBottom: 10,
+  },
+  apiBox: {
+    padding: 12,
+    backgroundColor: '#eee',
+    borderRadius: 8,
   },
 });

@@ -1,48 +1,73 @@
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useState } from 'react';
-import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useState } from 'react';
+import {
+  Alert,
+  Button,
+  StyleSheet,
+  TextInput,
+  View
+} from 'react-native';
 
 type RootStackParamList = {
   Login: undefined;
   Todo: undefined;
 };
 
-type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
-
 type Props = {
-  navigation: LoginScreenNavigationProp;
+  navigation: NativeStackNavigationProp<RootStackParamList, 'Login'>;
 };
 
 export default function LoginScreen({ navigation }: Props) {
   const [mobile, setMobile] = useState('');
-  const [submittedMobile, setSubmittedMobile] = useState(false);
-  const [showOtp, setShowOtp] = useState(false);
   const [otp, setOtp] = useState('');
+  const [showOtp, setShowOtp] = useState(false);
 
   const handleMobileSubmit = () => {
-    setSubmittedMobile(true);
     if (mobile.length === 10) {
       setShowOtp(true);
+    } else {
+      Alert.alert('Invalid Mobile Number', 'Please enter a 10-digit number');
     }
   };
 
   const handleOtpSubmit = () => {
     if (otp.length === 6) {
-      navigation.navigate('Todo');
+      fetch('https://reqres.in/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': 'reqres-free-v1',
+        },
+        body: JSON.stringify({
+          email: 'eve.holt@reqres.in',
+          password: 'cityslicka',
+        }),
+      })
+        .then(async (res) => {
+          const data = await res.json();
+          if (res.ok && data.token) {
+            Alert.alert('Login successful!', `Token: ${data.token}`);
+            navigation.navigate('Todo');
+          } else {
+            Alert.alert('Login failed', data.error || 'Invalid credentials');
+          }
+        })
+        .catch((error) => {
+          Alert.alert('Network error', error.message);
+        });
+    } else {
+      Alert.alert('Invalid OTP', 'Please enter a 6-digit OTP');
     }
   };
 
   return (
     <View style={styles.container}>
       <TextInput
-        placeholder="Enter 10 digit mobile number"
+        placeholder="Enter 10-digit mobile number"
         keyboardType="numeric"
         maxLength={10}
         value={mobile}
-        onChangeText={(text) => {
-          setMobile(text.replace(/[^0-9]/g, ''));
-          setSubmittedMobile(false);
-        }}
+        onChangeText={(text) => setMobile(text.replace(/[^0-9]/g, ''))}
         style={styles.input}
       />
       <Button
@@ -51,14 +76,10 @@ export default function LoginScreen({ navigation }: Props) {
         disabled={mobile.length !== 10}
       />
 
-      {submittedMobile && mobile.length !== 10 && (
-        <Text style={styles.warning}>Please enter 10 digits</Text>
-      )}
-
       {showOtp && (
         <View style={{ marginTop: 30 }}>
           <TextInput
-            placeholder="Enter 6 digit OTP"
+            placeholder="Enter 6-digit OTP"
             keyboardType="numeric"
             maxLength={6}
             value={otp}
@@ -85,9 +106,5 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     padding: 10,
     marginBottom: 15,
-  },
-  warning: {
-    color: 'red',
-    marginTop: 5,
   },
 });
